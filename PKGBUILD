@@ -15,45 +15,17 @@ install=${pkgname}.install
 source_x86_64=("https://downloads.nordlayer.com/linux/latest/debian/pool/main/nordlayer_${pkgver}_amd64.deb")
 sha512sums_x86_64=('f076ae853fb87941d1bc8c7cd34c31d233343a86b1d6b123353c328fda3fd938b7e38741ba1399f63eb2cdda990ddf460fde25e035eb810ea0c3d7de7e5303b2')
 
-prepare() {
-    cd "${srcdir}"
-    ar x "nordlayer_${pkgver}_amd64.deb"
-    tar -xf data.tar.gz -C "${srcdir}" || tar -xf data.tar.xz -C "${srcdir}" || tar -xf data.tar.bz2 -C "${srcdir}" || tar -xf data.tar -C "${srcdir}"
-}
-
 package() {
     cd "${srcdir}"
-    mkdir -p "${pkgdir}"
+    # Extract the data.tar.xz from the .deb file and then extract it into the pkgdir
+    bsdtar -Oxf "${source_x86_64[0]}" data.tar.xz | bsdtar -C "${pkgdir}" -xJf -
 
-    # Copy all necessary directories and files
-    cp -r etc "${pkgdir}/"
-    cp -r usr "${pkgdir}/"
-    cp -r var "${pkgdir}/"
+    # Move sbin binaries to bin
+    mv "${pkgdir}/usr/sbin"/* "${pkgdir}/usr/bin"
 
-    # Move /usr/sbin/nordlayerd to /usr/bin
-    if [ -f "${pkgdir}/usr/sbin/nordlayerd" ]; then
-        mkdir -p "${pkgdir}/usr/bin"
-        mv "${pkgdir}/usr/sbin/nordlayerd" "${pkgdir}/usr/bin/nordlayerd"
-        rm -rf "${pkgdir}/usr/sbin"
-    fi
+    # Update the systemd service file to point to /usr/bin instead of /usr/sbin
+    sed -i 's+/usr/sbin+/usr/bin+g' "${pkgdir}/usr/lib/systemd/system/nordlayer.service"
 
-    # Fix the systemd service file to point to the correct executable path
-    sed -i 's|ExecStart=/usr/sbin/nordlayerd|ExecStart=/usr/bin/nordlayerd|' "${pkgdir}/usr/lib/systemd/system/nordlayer.service"
-
-    # Ensure the necessary directories exist and have the correct permissions
-    install -d -m 0755 "${pkgdir}/run/nordlayer"
-    chown -R nordlayer:nordlayer "${pkgdir}/run/nordlayer"
-
-    # Set permissions for executable files
-    chmod 755 "${pkgdir}/usr/bin/nordlayer"
-    chmod 755 "${pkgdir}/usr/bin/nordlayerd"
-    chmod 755 "${pkgdir}/usr/libexec/nordlayer/nordlayer-charon"
-    chmod 755 "${pkgdir}/usr/libexec/nordlayer/nordlayer-ip"
-    chmod 755 "${pkgdir}/usr/libexec/nordlayer/nordlayer-openvpn"
-    chmod 755 "${pkgdir}/usr/libexec/nordlayer/nordlayer-resolvconf"
-    chmod 755 "${pkgdir}/usr/libexec/nordlayer/nordlayer-setcap"
-
-    # Log the final contents for debugging
-    echo "Final contents in ${pkgdir}:"
-    find "${pkgdir}"
+    # Remove the now-empty sbin directory
+    rm -r "${pkgdir}/usr/sbin"
 }

@@ -6,29 +6,36 @@ post_install() {
     setcap CAP_NET_BIND_SERVICE,CAP_NET_ADMIN,CAP_NET_RAW+eip /usr/bin/nordlayerd
     setcap CAP_NET_BIND_SERVICE,CAP_NET_ADMIN,CAP_NET_RAW+eip /usr/libexec/nordlayer/nordlayer-openvpn
 
-    # Create necessary groups
-    getent group nordlayer || groupadd -r nordlayer
-    getent group nordlayer-resolve || groupadd -r nordlayer-resolve
+    groupadd -r -f nordlayer
+    groupadd -r -f nordlayer-resolve
 
-    # Create nordlayer user if it does not exist
-    if ! id "nordlayer" &>/dev/null; then
-        useradd -r -M -d /run/nordlayer -s /usr/bin/nologin -c "Used for running NordLayer" -g nordlayer nordlayer
+    if ! id "nordlayer" >/dev/null 2>&1; then
+        useradd -s /usr/bin/nologin -c "Used for running NordLayer" -r -M -d /run/nordlayer -g nordlayer nordlayer
     fi
 
     usermod -a -G nordlayer-resolve nordlayer
 
-    # Setup directories and permissions
-    install -d -m 0770 -o nordlayer -g nordlayer ${VAR_LIB}
+    mkdir -p ${VAR_LIB}
+    chmod 0770 -R ${VAR_LIB}
+    chown nordlayer:nordlayer -R ${VAR_LIB}
+
     chown root:nordlayer-resolve ${NORDLAYER_RESOLVCONF}
     chmod 4750 ${NORDLAYER_RESOLVCONF}
+    # Ensure nordlayer-resolvconf has execute permissions
     chmod +x ${NORDLAYER_RESOLVCONF}
-
-    # Reload systemd and create tmpfiles
+    # Reload config
     systemctl daemon-reload
+
+    # Create tmpfiles
     systemd-tmpfiles --create
 
-    # Enable and start the service and socket
-    systemctl enable --now nordlayer.service nordlayer.socket
+    # Start service on boot
+    systemctl enable nordlayer.socket
+    systemctl enable nordlayer.service
+
+    # Restart service now
+    systemctl start nordlayer.socket
+    systemctl start nordlayer.service
 
     # Add current user to nordlayer group
     current_user=$(logname)
@@ -45,8 +52,10 @@ post_upgrade() {
 }
 
 pre_remove() {
-    # Disable and stop the service and socket
-    systemctl disable --now nordlayer.service nordlayer.socket
-    # Remove the directory
     rm -rf ${VAR_LIB}
+    systemctl disable nordlayer.service
+    systemctl disable nordlayer.socket
+
+    systemctl stop nordlayer.service
+    systemctl stop nordlayer.socket
 }
