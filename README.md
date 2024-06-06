@@ -1,6 +1,6 @@
 # [Nordlayer](https://nordlayer.com) VPN package for Linux (esp [ArchLinux](https://archlinux.org/))
 
-[![AUR version](https://img.shields.io/aur/version/nordlayer)](https://aur.archlinux.org/packages/nordlayer-bin) [![Nordlayer version](https://img.shields.io/badge/nordlayer-3.1.0-green)](https://nordlayer.com/download/linux/)
+[![AUR version](https://img.shields.io/aur/version/nordlayer)](https://aur.archlinux.org/packages/nordlayer) [![Nordlayer version](https://img.shields.io/badge/nordlayer-3.2.2-green)](https://nordlayer.com/download/linux/)
 
 ### Hotfix (Version 3.2.2) released by Nordlayer
 
