@@ -3,7 +3,7 @@ NORDLAYER_RESOLVCONF=/usr/libexec/nordlayer/nordlayer-resolvconf
 
 post_install() {
   # Allow the daemon executable to bind to port 500 and administer network
-  [ -f /usr/sbin/nordlayerd ] && /usr/libexec/nordlayer/nordlayer-setcap CAP_NET_BIND_SERVICE,CAP_NET_ADMIN,CAP_NET_RAW,CAP_IPC_LOCK+eip /usr/sbin/nordlayerd
+  [ -f /usr/bin/nordlayerd ] && /usr/libexec/nordlayer/nordlayer-setcap CAP_NET_BIND_SERVICE,CAP_NET_ADMIN,CAP_NET_RAW,CAP_IPC_LOCK+eip /usr/bin/nordlayerd
   [ -f /usr/libexec/nordlayer/nordlayer-charon ] && /usr/libexec/nordlayer/nordlayer-setcap CAP_NET_BIND_SERVICE,CAP_NET_ADMIN,CAP_NET_RAW+eip /usr/libexec/nordlayer/nordlayer-charon
   [ -f /usr/libexec/nordlayer/nordlayer-openvpn ] && /usr/libexec/nordlayer/nordlayer-setcap CAP_NET_BIND_SERVICE,CAP_NET_ADMIN,CAP_NET_RAW+eip /usr/libexec/nordlayer/nordlayer-openvpn
   [ -f /usr/bin/nordlayer ] && /usr/libexec/nordlayer/nordlayer-setcap CAP_IPC_LOCK+eip /usr/bin/nordlayer
@@ -32,21 +32,18 @@ post_install() {
   # Create tmpfiles
   systemd-tmpfiles --create
 
-  # Start service on boot
-  systemctl enable nordlayer.socket
-  systemctl enable nordlayer.service
+  # Enable and start services
+  systemctl enable --now nordlayer.socket
+  systemctl enable --now nordlayer.service
 
-  # Restart service now
-  systemctl start nordlayer.socket
-  systemctl start nordlayer.service
-   # Add current user to nordlayer group
-    current_user=$(logname)
-    if [ -n "$current_user" ]; then
-        usermod -a -G nordlayer "$current_user"
-        echo "User $current_user has been added to the 'nordlayer' group. Please log out and log back in for changes to take effect."
-    else
-        echo "Could not determine the current user. Please manually add the user to the 'nordlayer' group."
-    fi
+  # Add current user to nordlayer group
+  current_user=$(logname 2>/dev/null || echo "")
+  if [ -n "$current_user" ]; then
+    usermod -a -G nordlayer "$current_user"
+    echo "User $current_user has been added to the 'nordlayer' group. Please log out and log back in for changes to take effect."
+  else
+    echo "Could not determine the current user. Please manually add the user to the 'nordlayer' group."
+  fi
 }
 
 post_upgrade() {
@@ -55,9 +52,6 @@ post_upgrade() {
 
 pre_remove() {
   rm -rf ${VAR_LIB}
-  systemctl disable nordlayer.service
-  systemctl disable nordlayer.socket
-
-  systemctl stop nordlayer.service
-  systemctl stop nordlayer.socket
+  systemctl disable --now nordlayer.service
+  systemctl disable --now nordlayer.socket
 }
