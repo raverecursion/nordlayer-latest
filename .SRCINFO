@@ -1,4 +1,4 @@
-pkgbase = nordlayer-bin
+pkgbase = nordlayer
 	pkgdesc = Proprietary VPN client for Linux
 	pkgver = 3.3.1
 	pkgrel = 4
