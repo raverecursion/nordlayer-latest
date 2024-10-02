@@ -1,6 +1,6 @@
 # Maintainer: Roland Kiraly <rolandgyulakiraly at outlook dot com>
 # https://github.com/raverecursion/nordlayer-latest/tree/master
-pkgname=nordlayer
+pkgname=nordlayer-bin
 pkgver=3.3.1
 pkgrel=4
 pkgdesc="Proprietary VPN client for Linux"
